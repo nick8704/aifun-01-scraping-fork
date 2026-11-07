@@ -1,5 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
+import re
 import json
 
 
@@ -16,8 +17,14 @@ def fetch_wikipedia_page(url):
     Raises:
         HTTPError: If the HTTP request returned an unsuccessful status code.
     """
+    
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) EducationalScraper/1.0 (Educational Project)"
+    }
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
 
-    return None
+    return response.text
 
 
 def extract_title(soup):
@@ -30,8 +37,12 @@ def extract_title(soup):
     Returns:
         str: The title of the page.
     """
+    
+    title_element = soup.find('h1', id='firstHeading')
+    if title_element:
+        return title_element.text.strip()
 
-    return None
+    return ""
 
 
 def extract_first_sentence(soup):
@@ -44,8 +55,19 @@ def extract_first_sentence(soup):
     Returns:
         str: The first sentence of the first paragraph.
     """
+    
+    paragraphs = soup.find_all('p')
+    for p in paragraphs:
+        text = p.get_text().strip()
+        
+        if text:
+            cleaned_text = re.sub(r'\[\d\]', '', text)
+            sentences = re.split(r'(?<=[.!?])\s', cleaned_text)
+            
+            if sentences:
+                return sentences[0].strip()
 
-    return None
+    return ""
 
 
 def save_to_json(data, filename):
@@ -56,7 +78,9 @@ def save_to_json(data, filename):
         data (dict): The data to be saved to the JSON file.
         filename (str): The name of the JSON file to save the data in.
     """
-    ...
+    
+    with open(filename, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=4)
 
 
 if __name__ == "__main__":
